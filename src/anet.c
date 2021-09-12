@@ -267,6 +267,7 @@ static int anetCreateSocket(char *err, int domain) {
         return ANET_ERR;
     }
 #else
+ 
     if ((s = socket(domain, SOCK_STREAM, 0)) == -1) {
         anetSetError(err, "creating socket: %s", strerror(errno));
         return ANET_ERR;
@@ -293,9 +294,13 @@ static int anetTcpGenericConnect(char *err, const char *addr, int port,
 
     snprintf(portstr,sizeof(portstr),"%d",port);
     memset(&hints,0,sizeof(hints));
+#ifdef VIRTUAL_SOCKET
+    hints.ai_family = PF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+#else
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-
+#endif
     if ((rv = getaddrinfo(addr,portstr,&hints,&servinfo)) != 0) {
         anetSetError(err, "%s", gai_strerror(rv));
         return ANET_ERR;
@@ -304,9 +309,14 @@ static int anetTcpGenericConnect(char *err, const char *addr, int port,
         /* Try to create the socket and to connect it.
          * If we fail in the socket() call, or on connect(), we retry with
          * the next entry in servinfo. */
-        if ((s = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1)
+#ifdef VIRTUAL_SOCKET
+	if ((s = socket(PF_INET, SOCK_DGRAM, IPPROTO_VIRTUAL_SOCK)) == -1)
             continue;
-        if (anetSetReuseAddr(err,s) == ANET_ERR) goto error;
+#else
+    if ((s = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1)
+            continue;
+#endif
+	if (anetSetReuseAddr(err,s) == ANET_ERR) goto error;
         if (flags & ANET_CONNECT_NONBLOCK && anetNonBlock(err,s) != ANET_OK)
             goto error;
         if (source_addr) {
@@ -437,7 +447,11 @@ static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backl
     snprintf(_port,6,"%d",port);
     memset(&hints,0,sizeof(hints));
     hints.ai_family = af;
+#ifdef VIRTUAL_SOCKET
+    hints.ai_socktype = SOCK_DGRAM;
+#else
     hints.ai_socktype = SOCK_STREAM;
+#endif
     hints.ai_flags = AI_PASSIVE;    /* No effect if bindaddr != NULL */
     if (bindaddr && !strcmp("*", bindaddr))
         bindaddr = NULL;
@@ -449,9 +463,13 @@ static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backl
         return ANET_ERR;
     }
     for (p = servinfo; p != NULL; p = p->ai_next) {
+#ifdef VIRTUAL_SOCKET
+        if ((s = socket(PF_INET,SOCK_DGRAM,IPPROTO_VIRTUAL_SOCK)) == -1)
+            continue;
+#else
         if ((s = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1)
             continue;
-
+#endif
         if (af == AF_INET6 && anetV6Only(err,s) == ANET_ERR) goto error;
         if (anetSetReuseAddr(err,s) == ANET_ERR) goto error;
         if (anetListen(err,s,p->ai_addr,p->ai_addrlen,backlog) == ANET_ERR) s = ANET_ERR;
