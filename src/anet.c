@@ -261,11 +261,17 @@ static int anetSetReuseAddr(char *err, int fd) {
 
 static int anetCreateSocket(char *err, int domain) {
     int s;
+#ifdef VIRTUAL_SOCKET
+    if ((s = socket(domain, SOCK_DGRAM, IPPROTO_VIRTUAL_SOCK)) == -1) {
+        anetSetError(err, "creating socket: %s", strerror(errno));
+        return ANET_ERR;
+    }
+#else
     if ((s = socket(domain, SOCK_STREAM, 0)) == -1) {
         anetSetError(err, "creating socket: %s", strerror(errno));
         return ANET_ERR;
     }
-
+#endif
     /* Make sure connection-intensive things like the redis benchmark
      * will be able to close/open sockets a zillion of times */
     if (anetSetReuseAddr(err,s) == ANET_ERR) {
