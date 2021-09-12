@@ -115,10 +115,17 @@ static int redisSetReuseAddr(redisContext *c) {
 
 static int redisCreateSocket(redisContext *c, int type) {
     redisFD s;
+#ifdef VIRTUAL_SOCKET
+    if ((s = socket(PF_INET, SOCK_DGRAM, IPPROTO_VIRTUAL_SOCK)) == REDIS_INVALID_FD) {
+        __redisSetErrorFromErrno(c,REDIS_ERR_IO,NULL);
+        return REDIS_ERR;
+    }
+#else
     if ((s = socket(type, SOCK_STREAM, 0)) == REDIS_INVALID_FD) {
         __redisSetErrorFromErrno(c,REDIS_ERR_IO,NULL);
         return REDIS_ERR;
     }
+#endif
     c->fd = s;
     if (type == AF_INET) {
         if (redisSetReuseAddr(c) == REDIS_ERR) {
@@ -431,9 +438,13 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
     }
     for (p = servinfo; p != NULL; p = p->ai_next) {
 addrretry:
+#ifdef VIRTUAL_SOCK
+        if ((s = socket(PF_INET, SOCK_DGRAM, IPPROTO_VIRTUAL_SOCK)) == REDIS_INVALID_FD)
+            continue;
+#else
         if ((s = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == REDIS_INVALID_FD)
             continue;
-
+#endif
         c->fd = s;
         if (redisSetBlocking(c,0) != REDIS_OK)
             goto error;
