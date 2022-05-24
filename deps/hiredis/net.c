@@ -378,11 +378,9 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
     int reuseaddr = (c->flags & REDIS_REUSEADDR);
     int reuses = 0;
     long timeout_msec = -1;
-
     servinfo = NULL;
     c->connection_type = REDIS_CONN_TCP;
     c->tcp.port = port;
-
     /* We need to take possession of the passed parameters
      * to make them reusable for a reconnect.
      * We also carefully check we don't free data we already own,
@@ -405,7 +403,6 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
         hi_free(c->connect_timeout);
         c->connect_timeout = NULL;
     }
-
     if (redisContextTimeoutMsec(c, &timeout_msec) != REDIS_OK) {
         __redisSetError(c, REDIS_ERR_IO, "Invalid timeout specified");
         goto error;
@@ -421,8 +418,13 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
 
     snprintf(_port, 6, "%d", port);
     memset(&hints,0,sizeof(hints));
+#ifdef VIRTUAL_SOCKET
+    hints.ai_family = PF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+#else
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
+#endif
 
     /* Try with IPv6 if no IPv4 address was found. We do it in this order since
      * in a Redis client you can't afford to test if you have IPv6 connectivity
@@ -438,7 +440,7 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
     }
     for (p = servinfo; p != NULL; p = p->ai_next) {
 addrretry:
-#ifdef VIRTUAL_SOCK
+#ifdef VIRTUAL_SOCKET
         if ((s = socket(PF_INET, SOCK_DGRAM, IPPROTO_VIRTUAL_SOCK)) == REDIS_INVALID_FD)
             continue;
 #else
@@ -490,7 +492,6 @@ addrretry:
 
         memcpy(c->saddr, p->ai_addr, p->ai_addrlen);
         c->addrlen = p->ai_addrlen;
-
         if (connect(s,p->ai_addr,p->ai_addrlen) == -1) {
             if (errno == EHOSTUNREACH) {
                 redisNetClose(c);
