@@ -4,5 +4,5 @@ cp net.h.linux net.h
 make
 sudo make install
 cd ~/redis/
-g++ redis_async.cpp -L ~/redis/deps/hiredis/ -levent -levent_core -lhiredis -lpthread -o redis_async
-g++ redis_populate.cpp -L ~/redis/deps/hiredis/ -levent -lpthread -lhiredis -o redis_populate
+g++ redis_async.cpp -levent -levent_core -lhiredis -lpthread -o redis_async
+g++ redis_populate.cpp -levent -lpthread -lhiredis -o redis_populate
