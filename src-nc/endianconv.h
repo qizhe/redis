@@ -1,10 +1,8 @@
-/* Extracted from anet.c to work properly with Hiredis error reporting.
+/* See endianconv.c top comments for more information
  *
- * Copyright (c) 2009-2011, Salvatore Sanfilippo <antirez at gmail dot com>
- * Copyright (c) 2010-2014, Pieter Noordhuis <pcnoordhuis at gmail dot com>
- * Copyright (c) 2015, Matt Stancliff <matt at genges dot com>,
- *                     Jan-Erik Rediger <janerik at fnordig dot com>
+ * ----------------------------------------------------------------------------
  *
+ * Copyright (c) 2011-2012, Salvatore Sanfilippo <antirez at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,24 +30,49 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __NET_H
-#define __NET_H
+#ifndef __ENDIANCONV_H
+#define __ENDIANCONV_H
 
-#include "hiredis.h"
-void redisNetClose(redisContext *c);
-ssize_t redisNetRead(redisContext *c, char *buf, size_t bufcap);
-ssize_t redisNetWrite(redisContext *c);
+#include "config.h"
+#include <stdint.h>
 
-int redisCheckSocketError(redisContext *c);
-int redisContextSetTimeout(redisContext *c, const struct timeval tv);
-int redisContextConnectTcp(redisContext *c, const char *addr, int port, const struct timeval *timeout);
-int redisContextConnectBindTcp(redisContext *c, const char *addr, int port,
-                               const struct timeval *timeout,
-                               const char *source_addr);
-int redisContextConnectUnix(redisContext *c, const char *path, const struct timeval *timeout);
-int redisKeepAlive(redisContext *c, int interval);
-int redisCheckConnectDone(redisContext *c, int *completed);
+void memrev16(void *p);
+void memrev32(void *p);
+void memrev64(void *p);
+uint16_t intrev16(uint16_t v);
+uint32_t intrev32(uint32_t v);
+uint64_t intrev64(uint64_t v);
 
-int redisSetTcpNoDelay(redisContext *c);
+/* variants of the function doing the actual conversion only if the target
+ * host is big endian */
+#if (BYTE_ORDER == LITTLE_ENDIAN)
+#define memrev16ifbe(p) ((void)(0))
+#define memrev32ifbe(p) ((void)(0))
+#define memrev64ifbe(p) ((void)(0))
+#define intrev16ifbe(v) (v)
+#define intrev32ifbe(v) (v)
+#define intrev64ifbe(v) (v)
+#else
+#define memrev16ifbe(p) memrev16(p)
+#define memrev32ifbe(p) memrev32(p)
+#define memrev64ifbe(p) memrev64(p)
+#define intrev16ifbe(v) intrev16(v)
+#define intrev32ifbe(v) intrev32(v)
+#define intrev64ifbe(v) intrev64(v)
+#endif
+
+/* The functions htonu64() and ntohu64() convert the specified value to
+ * network byte ordering and back. In big endian systems they are no-ops. */
+#if (BYTE_ORDER == BIG_ENDIAN)
+#define htonu64(v) (v)
+#define ntohu64(v) (v)
+#else
+#define htonu64(v) intrev64(v)
+#define ntohu64(v) intrev64(v)
+#endif
+
+#ifdef REDIS_TEST
+int endianconvTest(int argc, char *argv[], int accurate);
+#endif
 
 #endif

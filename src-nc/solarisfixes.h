@@ -1,10 +1,6 @@
-/* Extracted from anet.c to work properly with Hiredis error reporting.
+/* Solaris specific fixes.
  *
- * Copyright (c) 2009-2011, Salvatore Sanfilippo <antirez at gmail dot com>
- * Copyright (c) 2010-2014, Pieter Noordhuis <pcnoordhuis at gmail dot com>
- * Copyright (c) 2015, Matt Stancliff <matt at genges dot com>,
- *                     Jan-Erik Rediger <janerik at fnordig dot com>
- *
+ * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,24 +28,27 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __NET_H
-#define __NET_H
+#if defined(__sun)
 
-#include "hiredis.h"
-void redisNetClose(redisContext *c);
-ssize_t redisNetRead(redisContext *c, char *buf, size_t bufcap);
-ssize_t redisNetWrite(redisContext *c);
+#if defined(__GNUC__)
+#include <math.h>
+#undef isnan
+#define isnan(x) \
+     __extension__({ __typeof (x) __x_a = (x); \
+     __builtin_expect(__x_a != __x_a, 0); })
 
-int redisCheckSocketError(redisContext *c);
-int redisContextSetTimeout(redisContext *c, const struct timeval tv);
-int redisContextConnectTcp(redisContext *c, const char *addr, int port, const struct timeval *timeout);
-int redisContextConnectBindTcp(redisContext *c, const char *addr, int port,
-                               const struct timeval *timeout,
-                               const char *source_addr);
-int redisContextConnectUnix(redisContext *c, const char *path, const struct timeval *timeout);
-int redisKeepAlive(redisContext *c, int interval);
-int redisCheckConnectDone(redisContext *c, int *completed);
+#undef isfinite
+#define isfinite(x) \
+     __extension__ ({ __typeof (x) __x_f = (x); \
+     __builtin_expect(!isnan(__x_f - __x_f), 1); })
 
-int redisSetTcpNoDelay(redisContext *c);
+#undef isinf
+#define isinf(x) \
+     __extension__ ({ __typeof (x) __x_i = (x); \
+     __builtin_expect(!isnan(__x_i) && !isfinite(__x_i), 0); })
 
-#endif
+#define u_int uint
+#define u_int32_t uint32_t
+#endif /* __GNUC__ */
+
+#endif /* __sun */

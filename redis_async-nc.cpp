@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "deps/hiredis/hiredis.h"
+#include "deps/hiredis-nc/hiredis.h"
 #include <vector>
 #include <algorithm>
 #include <numeric>
@@ -13,8 +13,8 @@
 #include <thread>
 #include <random>
 #include <map>
-#include "deps/hiredis/async.h"
-#include "deps/hiredis/adapters/libevent.h"
+#include "deps/hiredis-nc/async.h"
+#include "deps/hiredis-nc/adapters/libevent.h"
 
 using namespace std::chrono;
 

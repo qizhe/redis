@@ -1,10 +1,5 @@
-/* Extracted from anet.c to work properly with Hiredis error reporting.
- *
- * Copyright (c) 2009-2011, Salvatore Sanfilippo <antirez at gmail dot com>
- * Copyright (c) 2010-2014, Pieter Noordhuis <pcnoordhuis at gmail dot com>
- * Copyright (c) 2015, Matt Stancliff <matt at genges dot com>,
- *                     Jan-Erik Rediger <janerik at fnordig dot com>
- *
+/*
+ * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,24 +27,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __NET_H
-#define __NET_H
+#ifndef _REDIS_FMACRO_H
+#define _REDIS_FMACRO_H
 
-#include "hiredis.h"
-void redisNetClose(redisContext *c);
-ssize_t redisNetRead(redisContext *c, char *buf, size_t bufcap);
-ssize_t redisNetWrite(redisContext *c);
+#define _BSD_SOURCE
 
-int redisCheckSocketError(redisContext *c);
-int redisContextSetTimeout(redisContext *c, const struct timeval tv);
-int redisContextConnectTcp(redisContext *c, const char *addr, int port, const struct timeval *timeout);
-int redisContextConnectBindTcp(redisContext *c, const char *addr, int port,
-                               const struct timeval *timeout,
-                               const char *source_addr);
-int redisContextConnectUnix(redisContext *c, const char *path, const struct timeval *timeout);
-int redisKeepAlive(redisContext *c, int interval);
-int redisCheckConnectDone(redisContext *c, int *completed);
+#if defined(__linux__)
+#define _GNU_SOURCE
+#define _DEFAULT_SOURCE
+#endif
 
-int redisSetTcpNoDelay(redisContext *c);
+#if defined(_AIX)
+#define _ALL_SOURCE
+#endif
+
+#if defined(__linux__) || defined(__OpenBSD__)
+#define _XOPEN_SOURCE 700
+/*
+ * On NetBSD, _XOPEN_SOURCE undefines _NETBSD_SOURCE and
+ * thus hides inet_aton etc.
+ */
+#elif !defined(__NetBSD__)
+#define _XOPEN_SOURCE
+#endif
+
+#if defined(__sun)
+#define _POSIX_C_SOURCE 199506L
+#endif
+
+#define _LARGEFILE_SOURCE
+#define _FILE_OFFSET_BITS 64
+
+#ifdef __linux__
+/* features.h uses the defines above to set feature specific defines.  */
+#include <features.h>
+#endif
 
 #endif

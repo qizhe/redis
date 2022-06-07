@@ -1,10 +1,4 @@
-/* Extracted from anet.c to work properly with Hiredis error reporting.
- *
- * Copyright (c) 2009-2011, Salvatore Sanfilippo <antirez at gmail dot com>
- * Copyright (c) 2010-2014, Pieter Noordhuis <pcnoordhuis at gmail dot com>
- * Copyright (c) 2015, Matt Stancliff <matt at genges dot com>,
- *                     Jan-Erik Rediger <janerik at fnordig dot com>
- *
+/* Copyright (c) 2014, Matt Stancliff <matt@genges.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,27 +23,38 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+ * POSSIBILITY OF SUCH DAMAGE. */
 
-#ifndef __NET_H
-#define __NET_H
+#ifndef CRCSPEED_H
+#define CRCSPEED_H
 
-#include "hiredis.h"
-void redisNetClose(redisContext *c);
-ssize_t redisNetRead(redisContext *c, char *buf, size_t bufcap);
-ssize_t redisNetWrite(redisContext *c);
+#include <inttypes.h>
+#include <stdio.h>
 
-int redisCheckSocketError(redisContext *c);
-int redisContextSetTimeout(redisContext *c, const struct timeval tv);
-int redisContextConnectTcp(redisContext *c, const char *addr, int port, const struct timeval *timeout);
-int redisContextConnectBindTcp(redisContext *c, const char *addr, int port,
-                               const struct timeval *timeout,
-                               const char *source_addr);
-int redisContextConnectUnix(redisContext *c, const char *path, const struct timeval *timeout);
-int redisKeepAlive(redisContext *c, int interval);
-int redisCheckConnectDone(redisContext *c, int *completed);
+typedef uint64_t (*crcfn64)(uint64_t, const void *, const uint64_t);
+typedef uint16_t (*crcfn16)(uint16_t, const void *, const uint64_t);
 
-int redisSetTcpNoDelay(redisContext *c);
+/* CRC-64 */
+void crcspeed64little_init(crcfn64 fn, uint64_t table[8][256]);
+void crcspeed64big_init(crcfn64 fn, uint64_t table[8][256]);
+void crcspeed64native_init(crcfn64 fn, uint64_t table[8][256]);
 
+uint64_t crcspeed64little(uint64_t table[8][256], uint64_t crc, void *buf,
+                          size_t len);
+uint64_t crcspeed64big(uint64_t table[8][256], uint64_t crc, void *buf,
+                       size_t len);
+uint64_t crcspeed64native(uint64_t table[8][256], uint64_t crc, void *buf,
+                          size_t len);
+
+/* CRC-16 */
+void crcspeed16little_init(crcfn16 fn, uint16_t table[8][256]);
+void crcspeed16big_init(crcfn16 fn, uint16_t table[8][256]);
+void crcspeed16native_init(crcfn16 fn, uint16_t table[8][256]);
+
+uint16_t crcspeed16little(uint16_t table[8][256], uint16_t crc, void *buf,
+                          size_t len);
+uint16_t crcspeed16big(uint16_t table[8][256], uint16_t crc, void *buf,
+                       size_t len);
+uint16_t crcspeed16native(uint16_t table[8][256], uint16_t crc, void *buf,
+                          size_t len);
 #endif

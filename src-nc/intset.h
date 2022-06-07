@@ -1,10 +1,6 @@
-/* Extracted from anet.c to work properly with Hiredis error reporting.
- *
- * Copyright (c) 2009-2011, Salvatore Sanfilippo <antirez at gmail dot com>
- * Copyright (c) 2010-2014, Pieter Noordhuis <pcnoordhuis at gmail dot com>
- * Copyright (c) 2015, Matt Stancliff <matt at genges dot com>,
- *                     Jan-Erik Rediger <janerik at fnordig dot com>
- *
+/*
+ * Copyright (c) 2009-2012, Pieter Noordhuis <pcnoordhuis at gmail dot com>
+ * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,24 +28,28 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __NET_H
-#define __NET_H
+#ifndef __INTSET_H
+#define __INTSET_H
+#include <stdint.h>
 
-#include "hiredis.h"
-void redisNetClose(redisContext *c);
-ssize_t redisNetRead(redisContext *c, char *buf, size_t bufcap);
-ssize_t redisNetWrite(redisContext *c);
+typedef struct intset {
+    uint32_t encoding;
+    uint32_t length;
+    int8_t contents[];
+} intset;
 
-int redisCheckSocketError(redisContext *c);
-int redisContextSetTimeout(redisContext *c, const struct timeval tv);
-int redisContextConnectTcp(redisContext *c, const char *addr, int port, const struct timeval *timeout);
-int redisContextConnectBindTcp(redisContext *c, const char *addr, int port,
-                               const struct timeval *timeout,
-                               const char *source_addr);
-int redisContextConnectUnix(redisContext *c, const char *path, const struct timeval *timeout);
-int redisKeepAlive(redisContext *c, int interval);
-int redisCheckConnectDone(redisContext *c, int *completed);
+intset *intsetNew(void);
+intset *intsetAdd(intset *is, int64_t value, uint8_t *success);
+intset *intsetRemove(intset *is, int64_t value, int *success);
+uint8_t intsetFind(intset *is, int64_t value);
+int64_t intsetRandom(intset *is);
+uint8_t intsetGet(intset *is, uint32_t pos, int64_t *value);
+uint32_t intsetLen(const intset *is);
+size_t intsetBlobLen(intset *is);
+int intsetValidateIntegrity(const unsigned char *is, size_t size, int deep);
 
-int redisSetTcpNoDelay(redisContext *c);
-
+#ifdef REDIS_TEST
+int intsetTest(int argc, char *argv[], int accurate);
 #endif
+
+#endif // __INTSET_H

@@ -1,10 +1,5 @@
-/* Extracted from anet.c to work properly with Hiredis error reporting.
- *
- * Copyright (c) 2009-2011, Salvatore Sanfilippo <antirez at gmail dot com>
- * Copyright (c) 2010-2014, Pieter Noordhuis <pcnoordhuis at gmail dot com>
- * Copyright (c) 2015, Matt Stancliff <matt at genges dot com>,
- *                     Jan-Erik Rediger <janerik at fnordig dot com>
- *
+/*
+ * Copyright (c) 2018-2019, Salvatore Sanfilippo <antirez at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,24 +27,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __NET_H
-#define __NET_H
+/* This structure represents our canvas. Drawing functions will take a pointer
+ * to a canvas to write to it. Later the canvas can be rendered to a string
+ * suitable to be printed on the screen, using unicode Braille characters. */
 
-#include "hiredis.h"
-void redisNetClose(redisContext *c);
-ssize_t redisNetRead(redisContext *c, char *buf, size_t bufcap);
-ssize_t redisNetWrite(redisContext *c);
+/* This represents a very simple generic canvas in order to draw stuff.
+ * It's up to each LOLWUT versions to translate what they draw to the
+ * screen, depending on the result to accomplish. */
 
-int redisCheckSocketError(redisContext *c);
-int redisContextSetTimeout(redisContext *c, const struct timeval tv);
-int redisContextConnectTcp(redisContext *c, const char *addr, int port, const struct timeval *timeout);
-int redisContextConnectBindTcp(redisContext *c, const char *addr, int port,
-                               const struct timeval *timeout,
-                               const char *source_addr);
-int redisContextConnectUnix(redisContext *c, const char *path, const struct timeval *timeout);
-int redisKeepAlive(redisContext *c, int interval);
-int redisCheckConnectDone(redisContext *c, int *completed);
+#ifndef __LOLWUT_H
+#define __LOLWUT_H
 
-int redisSetTcpNoDelay(redisContext *c);
+typedef struct lwCanvas {
+    int width;
+    int height;
+    char *pixels;
+} lwCanvas;
+
+/* Drawing functions implemented inside lolwut.c. */
+lwCanvas *lwCreateCanvas(int width, int height, int bgcolor);
+void lwFreeCanvas(lwCanvas *canvas);
+void lwDrawPixel(lwCanvas *canvas, int x, int y, int color);
+int lwGetPixel(lwCanvas *canvas, int x, int y);
+void lwDrawLine(lwCanvas *canvas, int x1, int y1, int x2, int y2, int color);
+void lwDrawSquare(lwCanvas *canvas, int x, int y, float size, float angle, int color);
 
 #endif

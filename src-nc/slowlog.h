@@ -1,10 +1,5 @@
-/* Extracted from anet.c to work properly with Hiredis error reporting.
- *
- * Copyright (c) 2009-2011, Salvatore Sanfilippo <antirez at gmail dot com>
- * Copyright (c) 2010-2014, Pieter Noordhuis <pcnoordhuis at gmail dot com>
- * Copyright (c) 2015, Matt Stancliff <matt at genges dot com>,
- *                     Jan-Erik Rediger <janerik at fnordig dot com>
- *
+/*
+ * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,24 +27,28 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __NET_H
-#define __NET_H
+#ifndef __SLOWLOG_H__
+#define __SLOWLOG_H__
 
-#include "hiredis.h"
-void redisNetClose(redisContext *c);
-ssize_t redisNetRead(redisContext *c, char *buf, size_t bufcap);
-ssize_t redisNetWrite(redisContext *c);
+#define SLOWLOG_ENTRY_MAX_ARGC 32
+#define SLOWLOG_ENTRY_MAX_STRING 128
 
-int redisCheckSocketError(redisContext *c);
-int redisContextSetTimeout(redisContext *c, const struct timeval tv);
-int redisContextConnectTcp(redisContext *c, const char *addr, int port, const struct timeval *timeout);
-int redisContextConnectBindTcp(redisContext *c, const char *addr, int port,
-                               const struct timeval *timeout,
-                               const char *source_addr);
-int redisContextConnectUnix(redisContext *c, const char *path, const struct timeval *timeout);
-int redisKeepAlive(redisContext *c, int interval);
-int redisCheckConnectDone(redisContext *c, int *completed);
+/* This structure defines an entry inside the slow log list */
+typedef struct slowlogEntry {
+    robj **argv;
+    int argc;
+    long long id;       /* Unique entry identifier. */
+    long long duration; /* Time spent by the query, in microseconds. */
+    time_t time;        /* Unix time at which the query was executed. */
+    sds cname;          /* Client name. */
+    sds peerid;         /* Client network address. */
+} slowlogEntry;
 
-int redisSetTcpNoDelay(redisContext *c);
+/* Exported API */
+void slowlogInit(void);
+void slowlogPushEntryIfNeeded(client *c, robj **argv, int argc, long long duration);
 
-#endif
+/* Exported commands */
+void slowlogCommand(client *c);
+
+#endif /* __SLOWLOG_H__ */

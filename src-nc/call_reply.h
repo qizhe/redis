@@ -1,10 +1,5 @@
-/* Extracted from anet.c to work properly with Hiredis error reporting.
- *
- * Copyright (c) 2009-2011, Salvatore Sanfilippo <antirez at gmail dot com>
- * Copyright (c) 2010-2014, Pieter Noordhuis <pcnoordhuis at gmail dot com>
- * Copyright (c) 2015, Matt Stancliff <matt at genges dot com>,
- *                     Jan-Erik Rediger <janerik at fnordig dot com>
- *
+/*
+ * Copyright (c) 2009-2021, Redis Labs Ltd.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,24 +27,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __NET_H
-#define __NET_H
+#ifndef SRC_CALL_REPLY_H_
+#define SRC_CALL_REPLY_H_
 
-#include "hiredis.h"
-void redisNetClose(redisContext *c);
-ssize_t redisNetRead(redisContext *c, char *buf, size_t bufcap);
-ssize_t redisNetWrite(redisContext *c);
+#include "resp_parser.h"
 
-int redisCheckSocketError(redisContext *c);
-int redisContextSetTimeout(redisContext *c, const struct timeval tv);
-int redisContextConnectTcp(redisContext *c, const char *addr, int port, const struct timeval *timeout);
-int redisContextConnectBindTcp(redisContext *c, const char *addr, int port,
-                               const struct timeval *timeout,
-                               const char *source_addr);
-int redisContextConnectUnix(redisContext *c, const char *path, const struct timeval *timeout);
-int redisKeepAlive(redisContext *c, int interval);
-int redisCheckConnectDone(redisContext *c, int *completed);
+typedef struct CallReply CallReply;
 
-int redisSetTcpNoDelay(redisContext *c);
+CallReply *callReplyCreate(sds reply, void *private_data);
+int callReplyType(CallReply *rep);
+const char *callReplyGetString(CallReply *rep, size_t *len);
+long long callReplyGetLongLong(CallReply *rep);
+double callReplyGetDouble(CallReply *rep);
+int callReplyGetBool(CallReply *rep);
+size_t callReplyGetLen(CallReply *rep);
+CallReply *callReplyGetArrayElement(CallReply *rep, size_t idx);
+CallReply *callReplyGetSetElement(CallReply *rep, size_t idx);
+int callReplyGetMapElement(CallReply *rep, size_t idx, CallReply **key, CallReply **val);
+CallReply *callReplyGetAttribute(CallReply *rep);
+int callReplyGetAttributeElement(CallReply *rep, size_t idx, CallReply **key, CallReply **val);
+const char *callReplyGetBigNumber(CallReply *rep, size_t *len);
+const char *callReplyGetVerbatim(CallReply *rep, size_t *len, const char **format);
+const char *callReplyGetProto(CallReply *rep, size_t *len);
+void *callReplyGetPrivateData(CallReply *rep);
+int callReplyIsResp3(CallReply *rep);
+void freeCallReply(CallReply *rep);
 
-#endif
+#endif /* SRC_CALL_REPLY_H_ */

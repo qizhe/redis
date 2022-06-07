@@ -1,10 +1,5 @@
-/* Extracted from anet.c to work properly with Hiredis error reporting.
- *
- * Copyright (c) 2009-2011, Salvatore Sanfilippo <antirez at gmail dot com>
- * Copyright (c) 2010-2014, Pieter Noordhuis <pcnoordhuis at gmail dot com>
- * Copyright (c) 2015, Matt Stancliff <matt at genges dot com>,
- *                     Jan-Erik Rediger <janerik at fnordig dot com>
- *
+/*
+ * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,24 +27,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __NET_H
-#define __NET_H
+/* Every time the Redis Git SHA1 or Dirty status changes only this small
+ * file is recompiled, as we access this information in all the other
+ * files using this functions. */
 
-#include "hiredis.h"
-void redisNetClose(redisContext *c);
-ssize_t redisNetRead(redisContext *c, char *buf, size_t bufcap);
-ssize_t redisNetWrite(redisContext *c);
+#include <string.h>
+#include <stdio.h>
 
-int redisCheckSocketError(redisContext *c);
-int redisContextSetTimeout(redisContext *c, const struct timeval tv);
-int redisContextConnectTcp(redisContext *c, const char *addr, int port, const struct timeval *timeout);
-int redisContextConnectBindTcp(redisContext *c, const char *addr, int port,
-                               const struct timeval *timeout,
-                               const char *source_addr);
-int redisContextConnectUnix(redisContext *c, const char *path, const struct timeval *timeout);
-int redisKeepAlive(redisContext *c, int interval);
-int redisCheckConnectDone(redisContext *c, int *completed);
+#include "release.h"
+#include "version.h"
+#include "crc64.h"
 
-int redisSetTcpNoDelay(redisContext *c);
+char *redisGitSHA1(void) {
+    return REDIS_GIT_SHA1;
+}
 
-#endif
+char *redisGitDirty(void) {
+    return REDIS_GIT_DIRTY;
+}
+
+uint64_t redisBuildId(void) {
+    char *buildid = REDIS_VERSION REDIS_BUILD_ID REDIS_GIT_DIRTY REDIS_GIT_SHA1;
+
+    return crc64(0,(unsigned char*)buildid,strlen(buildid));
+}
+
+/* Return a cached value of the build string in order to avoid recomputing
+ * and converting it in hex every time: this string is shown in the INFO
+ * output that should be fast. */
+char *redisBuildIdString(void) {
+    static char buf[32];
+    static int cached = 0;
+    if (!cached) {
+        snprintf(buf,sizeof(buf),"%llx",(unsigned long long) redisBuildId());
+        cached = 1;
+    }
+    return buf;
+}

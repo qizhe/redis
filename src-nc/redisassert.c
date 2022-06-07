@@ -1,10 +1,12 @@
-/* Extracted from anet.c to work properly with Hiredis error reporting.
+/* redisassert.c -- Implement the default _serverAssert and _serverPanic which 
+ * simply print stack trace to standard error stream.
+ * 
+ * This file is shared by those modules that try to print some logs about stack trace 
+ * but don't have their own implementations of functions in redisassert.h.
  *
- * Copyright (c) 2009-2011, Salvatore Sanfilippo <antirez at gmail dot com>
- * Copyright (c) 2010-2014, Pieter Noordhuis <pcnoordhuis at gmail dot com>
- * Copyright (c) 2015, Matt Stancliff <matt at genges dot com>,
- *                     Jan-Erik Rediger <janerik at fnordig dot com>
+ * ----------------------------------------------------------------------------
  *
+ * Copyright (c) 2021, Andy Pan <panjf2000@gmail.com> and Redis Labs
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,24 +34,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __NET_H
-#define __NET_H
 
-#include "hiredis.h"
-void redisNetClose(redisContext *c);
-ssize_t redisNetRead(redisContext *c, char *buf, size_t bufcap);
-ssize_t redisNetWrite(redisContext *c);
+#include <stdio.h> 
+#include <stdlib.h>
 
-int redisCheckSocketError(redisContext *c);
-int redisContextSetTimeout(redisContext *c, const struct timeval tv);
-int redisContextConnectTcp(redisContext *c, const char *addr, int port, const struct timeval *timeout);
-int redisContextConnectBindTcp(redisContext *c, const char *addr, int port,
-                               const struct timeval *timeout,
-                               const char *source_addr);
-int redisContextConnectUnix(redisContext *c, const char *path, const struct timeval *timeout);
-int redisKeepAlive(redisContext *c, int interval);
-int redisCheckConnectDone(redisContext *c, int *completed);
+void _serverAssert(const char *estr, const char *file, int line) {
+    fprintf(stderr, "=== ASSERTION FAILED ===");
+    fprintf(stderr, "==> %s:%d '%s' is not true",file,line,estr);
+    *((char*)-1) = 'x';
+}
 
-int redisSetTcpNoDelay(redisContext *c);
-
-#endif
+void _serverPanic(const char *file, int line, const char *msg, ...) {
+    fprintf(stderr, "------------------------------------------------");
+    fprintf(stderr, "!!! Software Failure. Press left mouse button to continue");
+    fprintf(stderr, "Guru Meditation: %s #%s:%d",msg,file,line);
+    abort();
+}
