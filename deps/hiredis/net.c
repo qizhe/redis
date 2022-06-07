@@ -117,7 +117,8 @@ static int redisCreateSocket(redisContext *c, int type) {
     redisFD s;
 #ifdef VIRTUAL_SOCKET
     if ((s = socket(PF_INET, SOCK_DGRAM, IPPROTO_VIRTUAL_SOCK)) == REDIS_INVALID_FD) {
-        __redisSetErrorFromErrno(c,REDIS_ERR_IO,NULL);
+        printf("virtual socket is being created\n");
+	__redisSetErrorFromErrno(c,REDIS_ERR_IO,NULL);
         return REDIS_ERR;
     }
 #else
@@ -419,6 +420,8 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
     snprintf(_port, 6, "%d", port);
     memset(&hints,0,sizeof(hints));
 #ifdef VIRTUAL_SOCKET
+            printf("virtual socket is being created\n");
+
     hints.ai_family = PF_INET;
     hints.ai_socktype = SOCK_DGRAM;
 #else
@@ -441,6 +444,7 @@ static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
     for (p = servinfo; p != NULL; p = p->ai_next) {
 addrretry:
 #ifdef VIRTUAL_SOCKET
+	        printf("virtual socket is being created\n");
         if ((s = socket(PF_INET, SOCK_DGRAM, IPPROTO_VIRTUAL_SOCK)) == REDIS_INVALID_FD)
             continue;
 #else
