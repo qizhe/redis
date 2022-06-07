@@ -1,0 +1,13 @@
+# Build redis-client for Linux
+cd ~/redis/deps/hiredis
+make
+cd ~/redis/
+g++ redis_async.cpp -L ~/redis/deps/hiredis/ -levent -levent_core -lhiredis -lpthread -o redis_async
+g++ redis_populate.cpp -L ~/redis/deps/hiredis/ -levent -lpthread -lhiredis -o redis_populate
+
+# Build reids-client for NetChannel
+cd ~/redis/deps/hiredis-nc
+make
+cd ~/redis/
+g++ redis_async-nc.cpp -L ~/redis/deps/hiredis-nc/ -levent -levent_core -lhiredis -lpthread -o redis_async-nc
+g++ redis_populate-nc.cpp -L ~/redis/deps/hiredis-nc/ -levent -lpthread -lhiredis -o redis_populate-nc
